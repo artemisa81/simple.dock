@@ -189,6 +189,7 @@ Item {
   property var manifest: null
 
   readonly property string dockPath: Quickshell.env("HOME") + "/.config/omarchy/dock.json"
+  readonly property string configPath: Quickshell.env("HOME") + "/.config/omarchy/simple.dock.json"
 
   readonly property var appLibrary: shell ? shell.appLibrary : null
 
@@ -230,7 +231,9 @@ Item {
 
   // Autohide. Hidden by default; the bottom edge acts as a reveal strip, and
   // the dock slides up while the cursor is over it (or a context menu is
-  // open) and slides away shortly after the cursor leaves.
+  // open) and slides away shortly after the cursor leaves. Set "autohide" to
+  // false in ~/.config/omarchy/simple.dock.json to keep the dock pinned.
+  property bool autohide: true
   property bool dockVisible: false
   property bool revealHovered: false
   property int cardHoverers: 0
@@ -254,6 +257,11 @@ Item {
     root.syncVisibility()
   }
   function syncVisibility() {
+    if (!root.autohide) {
+      hideTimer.stop()
+      root.dockVisible = true
+      return
+    }
     if (root.revealHovered || root.cardHoverers > 0 || root.contextAppId !== "") {
       hideTimer.stop()
       if (!root.dockVisible) root.dockVisible = true
@@ -264,9 +272,19 @@ Item {
 
   onRevealHoveredChanged: root.syncVisibility()
   onContextAppIdChanged: root.syncVisibility()
+  onAutohideChanged: root.syncVisibility()
   // Rebuilds can destroy a hovered item (e.g. a window closes) and leak a
   // hover count; drop it so the dock can still autohide.
   onDockModelChanged: root.cardHoverers = 0
+
+  FileView {
+    id: configFile
+    path: root.configPath
+    watchChanges: true
+    atomicWrites: true
+    onLoaded: root.loadConfig()
+    onFileChanged: configFile.reload()
+  }
 
   FileView {
     id: dockFile
@@ -296,6 +314,19 @@ Item {
 
   function loadPinned() {
     root.pinnedIds = DockModel.parsePinned(dockFile.text())
+  }
+
+  function loadConfig() {
+    var raw = String(configFile.text() || "").trim()
+    var parsed = {}
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw)
+      } catch (e) {
+        parsed = {}
+      }
+    }
+    root.autohide = parsed && parsed.autohide !== false
   }
 
   function rescanApps() {
@@ -380,7 +411,7 @@ Item {
       item: dockCard
       regions: [
         Region { item: contextMenu },
-        Region { item: revealStrip }
+        Region { item: root.autohide ? revealStrip : undefined }
       ]
     }
 

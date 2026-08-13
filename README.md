@@ -12,7 +12,9 @@ A minimal, autohiding app dock for [Omarchy](https://omarchy.org) (Quickshell).
 - Left-click a running app to focus it (or launch a pinned app that isn't running).
 - Right-click for a context menu: **Launch**, **Pin to Dock** / **Unpin from Dock**, and **Close Window(s)**.
 - Pin state persists in `~/.config/omarchy/dock.json` across shell restarts.
-- Autohide: the dock hides and reveals itself when the cursor touches the bottom edge of the screen.
+- Autohide: the dock hides and reveals itself when the cursor touches the
+  bottom edge of the screen. Disable it via `~/.config/omarchy/simple.dock.json`
+  (`"autohide": false`) to keep the dock pinned.
 
 ## Requirements
 
@@ -48,6 +50,8 @@ of the screen with the cursor to reveal it.
 
 ## Configuration
 
+### Pinned apps
+
 Pinned apps are stored in `~/.config/omarchy/dock.json`:
 
 ```json
@@ -59,6 +63,21 @@ Pinned apps are stored in `~/.config/omarchy/dock.json`:
 Entries are desktop-file ids (the `.desktop` suffix is optional). The file is
 created automatically the first time you pin an app; edits you make to it are
 picked up while the shell is running.
+
+### Autohide
+
+The dock hides and reveals itself when the cursor touches the bottom edge of
+the screen. To keep it pinned and always visible, create
+`~/.config/omarchy/simple.dock.json` with:
+
+```json
+{
+  "autohide": false
+}
+```
+
+The file is optional — a missing file (or `"autohide": true`) enables
+autohide. Edits are picked up live, no restart needed.
 
 ## Files
 
