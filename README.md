@@ -20,19 +20,28 @@ A minimal, autohiding app dock for [Omarchy](https://omarchy.org) (Quickshell).
 
 ## Installation
 
-Clone this repository into the Omarchy user plugin directory:
+Install and enable with the official Omarchy plugin command:
 
 ```sh
-git clone git@github.com:nightdevil00/simple.dock.git \
-  ~/.config/omarchy/plugins/simple.dock
+omarchy plugin add https://github.com/nightdevil00/simple.dock.git --enable
 ```
 
-Enable the plugin and restart the shell:
+The command clones the repo into `~/.config/omarchy/plugins/simple.dock`,
+validates the manifest, and enables the plugin. To update it later:
 
 ```sh
-omarchy plugin enable simple.dock
-omarchy restart shell
+omarchy plugin update simple.dock
 ```
+
+To uninstall:
+
+```sh
+omarchy plugin remove simple.dock
+```
+
+After installing (or removing) the plugin, the shell restarts or rescans the
+plugin directory automatically; if the dock does not appear, run
+`omarchy restart shell`.
 
 The dock appears at the bottom of the primary monitor. Touch the bottom edge
 of the screen with the cursor to reveal it.
