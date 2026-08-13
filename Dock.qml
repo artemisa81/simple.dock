@@ -191,6 +191,20 @@ Item {
   readonly property string dockPath: Quickshell.env("HOME") + "/.config/omarchy/dock.json"
   readonly property string configPath: Quickshell.env("HOME") + "/.config/omarchy/simple.dock.json"
 
+  // Monitor to attach the dock to ("screen" in simple.dock.json). Defaults to
+  // the first screen Quickshell reports.
+  property string screenName: ""
+  readonly property var dockScreen: root.screenName
+    ? root.screenForName(root.screenName)
+    : (Quickshell.screens.length > 0 ? Quickshell.screens[0] : null)
+
+  function screenForName(name) {
+    var list = Quickshell.screens
+    for (var i = 0; i < list.length; i++)
+      if (list[i].name === name) return list[i]
+    return null
+  }
+
   readonly property var appLibrary: shell ? shell.appLibrary : null
 
   // Sizing. The icon sits in a slightly padded slot; the card wraps the row.
@@ -327,6 +341,7 @@ Item {
       }
     }
     root.autohide = parsed && parsed.autohide !== false
+    root.screenName = parsed && typeof parsed.screen === "string" ? parsed.screen : ""
   }
 
   function rescanApps() {
@@ -399,6 +414,7 @@ Item {
   PanelWindow {
     id: dockWindow
 
+    screen: root.dockScreen
     color: "transparent"
     WlrLayershell.namespace: "simple-dock"
     WlrLayershell.layer: WlrLayer.Overlay

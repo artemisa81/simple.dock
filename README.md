@@ -15,6 +15,7 @@ A minimal, autohiding app dock for [Omarchy](https://omarchy.org) (Quickshell).
 - Autohide: the dock hides and reveals itself when the cursor touches the
   bottom edge of the screen. Disable it via `~/.config/omarchy/simple.dock.json`
   (`"autohide": false`) to keep the dock pinned.
+- Configurable monitor via `"screen": "eDP-1"` in the same file.
 
 ## Requirements
 
@@ -64,7 +65,7 @@ Entries are desktop-file ids (the `.desktop` suffix is optional). The file is
 created automatically the first time you pin an app; edits you make to it are
 picked up while the shell is running.
 
-### Autohide
+### Autohide and screen
 
 The dock hides and reveals itself when the cursor touches the bottom edge of
 the screen. To keep it pinned and always visible, create
@@ -72,12 +73,18 @@ the screen. To keep it pinned and always visible, create
 
 ```json
 {
-  "autohide": false
+  "autohide": false,
+  "screen": "eDP-1"
 }
 ```
 
-The file is optional — a missing file (or `"autohide": true`) enables
-autohide. Edits are picked up live, no restart needed.
+- `autohide` — `true` (default) enables hover-reveal autohide; `false` keeps
+  the dock pinned and always visible.
+- `screen` — optional name of the monitor to attach the dock to (from
+  `hyprctl monitors`); defaults to the first screen Quickshell reports.
+
+The file is optional — a missing file uses the defaults. Edits are picked up
+live, no restart needed.
 
 ## Files
 
