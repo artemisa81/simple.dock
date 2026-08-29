@@ -359,7 +359,7 @@ Item {
     if (entry && entry.running) {
       DockModel.activateApp(ToplevelManager.toplevels.values, ToplevelManager.activeToplevel, appId)
     } else {
-      root.shell.appLibrary.launch(appId, entry ? entry.name : appId)
+      root.shell.appLibrary.launch(entry && entry.desktopId ? entry.desktopId : appId, entry ? entry.name : appId)
     }
   }
 
@@ -582,8 +582,10 @@ Item {
       ContextRow {
         text: "Launch"
         onTriggered: {
-          if (root.shell && root.shell.appLibrary)
-            root.shell.appLibrary.launch(root.contextAppId, root.contextName)
+          if (root.shell && root.shell.appLibrary) {
+            var launchEntry = root.entryForId(root.contextAppId)
+            root.shell.appLibrary.launch(launchEntry && launchEntry.desktopId ? launchEntry.desktopId : root.contextAppId, root.contextName)
+          }
           root.closeContext()
         }
       }

@@ -82,14 +82,70 @@ function isPinned(pinnedIds, appId) {
 // Locate the desktop entry whose id matches a normalized app id. `appRows`
 // is the array returned by appLibrary.sortedEntries(""), each element having
 // `.entry`.
+// Windows Omarchy launches itself ship no desktop entry of their own, so the
+// dock has nothing to resolve and falls back to a blank slot. Note that every
+// agent (Claude, OpenCode, Codex, ...) shares org.omarchy.agent by design, so
+// the dock necessarily shows them as one grouped entry.
+var CLASS_FALLBACKS = {
+  "org.omarchy.terminal": { name: "Terminal", icon: "com.mitchellh.ghostty" },
+  "org.omarchy.agent": { name: "Agent", icon: "omarchy" }
+}
+
+// Host embedded in a Chromium web-app class. Chromium derives the class from
+// the --app URL as chrome-<host>__<path>-Default, so the host is everything
+// between the "chrome-" prefix and the first underscore.
+function webappHost(appId) {
+  var m = /^chrome-([A-Za-z0-9.-]+?)__/.exec(appId)
+  return m ? m[1] : ""
+}
+
 function entryFor(appRows, appId) {
   var want = stripDesktop(appId)
   if (!want || !appRows) return null
-  for (var i = 0; i < appRows.length; i++) {
-    var row = appRows[i]
-    var entry = row && row.entry
+  var i, row, entry
+  for (i = 0; i < appRows.length; i++) {
+    row = appRows[i]
+    entry = row && row.entry
     if (!entry) continue
     if (stripDesktop(entry.id) === want) return entry
+  }
+  // Chromium web apps report a URL-derived class that never equals a desktop
+  // id, so the exact match above always misses them and they lose their icon.
+  // Try StartupWMClass next (set it on the .desktop file when the Exec line
+  // hides the URL behind a handler script), then the host in the class.
+  for (i = 0; i < appRows.length; i++) {
+    row = appRows[i]
+    entry = row && row.entry
+    if (!entry || !entry.startupClass) continue
+    if (stripDesktop(entry.startupClass) === want) return entry
+  }
+  // Reverse-DNS classes often disagree with the desktop id in case or depth
+  // (Obsidian reports md.obsidian.Obsidian against an "obsidian" entry whose
+  // StartupWMClass says md.Obsidian), so compare case-insensitively and also
+  // against the last dotted segment.
+  var lower = want.toLowerCase()
+  var tail = lower.split(".").pop()
+  for (i = 0; i < appRows.length; i++) {
+    row = appRows[i]
+    entry = row && row.entry
+    if (!entry) continue
+    var eid = stripDesktop(entry.id).toLowerCase()
+    if (eid === lower || eid === tail) return entry
+    if (entry.startupClass) {
+      var sc = stripDesktop(entry.startupClass).toLowerCase()
+      if (sc === lower || sc.split(".").pop() === tail) return entry
+    }
+  }
+
+  var host = webappHost(want)
+  if (!host) return null
+  // Anchor on a non-host character so "x.com" cannot match "linux.com".
+  var re = new RegExp("(^|[^A-Za-z0-9.-])" + host.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  for (i = 0; i < appRows.length; i++) {
+    row = appRows[i]
+    entry = row && row.entry
+    if (!entry || !entry.execString) continue
+    if (re.test(entry.execString)) return entry
   }
   return null
 }
@@ -125,9 +181,19 @@ function buildEntries(pinnedIds, toplevels, appRows, appLibrary) {
       if (entry && appLibrary) {
         list[j].name = appLibrary.entryName(entry)
         list[j].icon = appLibrary.iconSource(entry.icon)
+        // Real desktop id, so launching a pinned web app that is not running
+        // does not try to exec its window class.
+        list[j].desktopId = stripDesktop(entry.id)
       } else {
-        list[j].name = list[j].appId
-        list[j].icon = ""
+        var fallback = CLASS_FALLBACKS[list[j].appId]
+        if (fallback && appLibrary) {
+          list[j].name = fallback.name
+          list[j].icon = appLibrary.iconSource(fallback.icon)
+        } else {
+          list[j].name = list[j].appId
+          list[j].icon = ""
+        }
+        list[j].desktopId = list[j].appId
       }
     }
   }
